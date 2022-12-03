@@ -1,9 +1,13 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class GoldBlockManager : MonoBehaviour
 {
+    public static event Action<Transform> OnBlockSpawned;
+
     [SerializeField] private List<Transform> spawningPoints;
     private Dictionary<Vector3, Transform> spawningPointsPositionsDictionary;
     private const int indexOffset = 1;
@@ -21,6 +25,7 @@ public class GoldBlockManager : MonoBehaviour
     void Start()
     {
         GoldBlock.OnGoldBlockDisabled += SpawnNewGoldBlock;
+        StartCoroutine(SpawnFirstBlock());
     }
 
     private void SpawnNewGoldBlock(Vector3 currentPos)
@@ -45,10 +50,26 @@ public class GoldBlockManager : MonoBehaviour
         Transform spawningPoint = spawningPoints[GetRandomPoint()];
         GameObject goldBlock = ObjectPooler.Instance.SpawnFromPool(ObjectPooler.PoolObjName.GoldBlock, spawningPoint.position, spawningPoint.rotation);
         goldBlock.SetActive(true);
+        OnBlockSpawned?.Invoke(goldBlock.transform);
     }
 
     private int GetRandomPoint()
     {
         return Random.Range(0, Mathf.Clamp(spawningPoints.Count - indexOffset, 0, spawningPoints.Count));
+    }
+
+    private IEnumerator SpawnFirstBlock()
+    {
+        yield return new WaitForSeconds(0.5f);
+        SpawnBlockAtRandomPoint();
+    }
+
+    private void OnDrawGizmos()
+    {
+        foreach(Transform transform in spawningPoints)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawSphere(transform.position, 1f);
+        }
     }
 }

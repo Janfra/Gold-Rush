@@ -2,13 +2,20 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SlowingBlocks : MonoBehaviour
+[RequireComponent(typeof(BoxCollider))]
+public class SlowingBlocks : MovingObstacle
 {
     [SerializeField] private float slowModifier = 1f;
 
     private void Start()
     {
         GetComponent<Collider>().isTrigger = true;
+        OnStart();
+    }
+
+    protected override void OnStart()
+    {
+        base.OnStart();
     }
 
     private void OnTriggerEnter(Collider other)
@@ -26,5 +33,10 @@ public class SlowingBlocks : MonoBehaviour
         {
             movement.AddSpeedModifier(slowModifier);
         }
+    }
+
+    public void ChangeLerpModifier(float newSpeed)
+    {
+        SetLerpModifier(newSpeed);
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -17,7 +18,32 @@ public abstract class LoadingBar
     /// </summary>
     [SerializeField] protected GameObject canvas;
 
+    /// <summary>
+    /// Can be used to cancel the loading
+    /// </summary>
+    protected bool isCanceled;
+
+    /// <summary>
+    /// Returns the result of the load.
+    /// </summary>
+    public Action<bool> isLoadingSuccessful;
+
     private const float yOffset = 1f;
+    protected const float loadBackSpeed = 0.5f;
+
+    public struct LoadToTargetInfo
+    {
+        public float Duration;
+        public float InitialValue;
+        public float TargetValue;
+
+        public LoadToTargetInfo(float interactionDuration, float initialValue, float targetValue)
+        {
+            Duration = interactionDuration;
+            InitialValue = initialValue;
+            TargetValue = targetValue;
+        }
+    }
 
     public void OnAwake(RotationConstraint rotationConstraint)
     {
@@ -30,6 +56,10 @@ public abstract class LoadingBar
     public virtual void OnStart()
     {
         SetVisibility(false);
+        if(sliderBar.maxValue == 0)
+        {
+            Debug.LogError($"{sliderBar.gameObject.name} has not set their slider values! Please use Init()");
+        }
     }
 
     public void Init(float maxValue, Mesh meshSize, Transform location)
@@ -42,6 +72,38 @@ public abstract class LoadingBar
     {
         sliderBar = newSlider;
         canvas = newCanvas;
+    }
+
+    public virtual IEnumerator LoadToTarget(LoadToTargetInfo loadInfo)
+    {
+        Debug.Log("Start loading");
+
+        SetVisibility(true);
+        isCanceled = false;
+        float value = sliderBar.value;
+        float alpha = 0f;
+        while (value != loadInfo.TargetValue && !isCanceled)
+        {
+            SetVisibility(true);
+            alpha += Time.deltaTime;
+            value = Lerp(loadInfo.InitialValue, loadInfo.TargetValue, loadInfo.Duration, AlphaClamp(alpha, loadInfo.Duration));
+            sliderBar.value = value;
+            yield return null;
+        }
+
+        // If the interaction fails, start loading back to initial value.
+        if (isCanceled)
+        {
+            SetVisibility(false);
+            isLoadingSuccessful?.Invoke(false);
+            yield break;
+        }
+        isLoadingSuccessful?.Invoke(true);
+    }
+
+    public virtual void CancelLoading()
+    {
+        isCanceled = true;
     }
 
     #region Clamp & Setters

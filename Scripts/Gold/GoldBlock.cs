@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Animations;
 
-public class GoldBlock : MonoBehaviour, IInteractable, IGridUpdatable
+public class GoldBlock : InteractableObject, IGridUpdatable
 {
     public static event Action<Vector3> OnGoldBlockDisabled;
 
@@ -26,30 +26,18 @@ public class GoldBlock : MonoBehaviour, IInteractable, IGridUpdatable
     [SerializeField] protected List<Mesh> stageMesh;
 
     /// <summary>
-    /// Duration of the transition to next stage.
-    /// </summary>
-    [SerializeField] protected float durationPerStage;
-
-    /// <summary>
-    /// Timer to be used in between stages and UI handling.
-    /// </summary>
-    [SerializeField] protected Interact_LoadingBar interactLoadBar;
-
-    /// <summary>
     /// Index for current state of the mesh.
     /// </summary>
     protected int currentStageIndex;
 
     /// <summary>
-    /// Sets if it is possible to interact with the object.
-    /// </summary>
-    protected bool isInteractable;
-
-    /// <summary>
-    /// Initial transform of object to reset it
+    /// Initial scale of object to reset it
     /// </summary>
     protected Vector3 originalScale;
 
+    /// <summary>
+    /// Initial position of object to reset it
+    /// </summary>
     protected Vector3 originalPos;
 
     #endregion
@@ -97,20 +85,14 @@ public class GoldBlock : MonoBehaviour, IInteractable, IGridUpdatable
         GoldHealth.OnGoldBlockDestroyed += OnBlockDisabled;
     }
 
-    protected void OnStart()
+    protected override void OnStart()
     {
+        base.OnStart();
         currentStageIndex = 0;
         originalScale = transform.localScale;
-        isInteractable = true;
-        if (durationPerStage == 0f)
-        {
-            durationPerStage = 1f;
-            Debug.LogError($"Duration Per Stage in {gameObject.name} has not been set");
-        }
 
         // Loading
         interactLoadBar.Init(maxStageIndex + stageOffset, meshFilter.mesh, transform);
-        interactLoadBar.isLoadingSuccessful = LoadResult;
 
         // Grid Updating
         gridUpdateIndex = GridUpdateManager.Instance.GetIndex(gameObject);
@@ -122,7 +104,7 @@ public class GoldBlock : MonoBehaviour, IInteractable, IGridUpdatable
     /// Starts interaction
     /// </summary>
     /// <param name="playerPos">Players position to check if its in range</param>
-    public void OnInteract(Transform playerPos)
+    public override void OnInteract(Transform playerPos)
     {
         if (!isInteractable)
             return;
@@ -137,7 +119,7 @@ public class GoldBlock : MonoBehaviour, IInteractable, IGridUpdatable
     /// <param name="playerPos"></param>
     protected void StartLoading(Transform playerPos)
     {
-        StartCoroutine(interactLoadBar.StartInteraction(new Interact_LoadingBar.LoadInteractionInfo(durationPerStage, currentStageIndex, currentStageIndex + stageOffset, transform, playerPos)));
+        StartCoroutine(interactLoadBar.StartInteraction(new Interact_LB.LoadInteractionInfo(durationPerInteractStage, currentStageIndex, currentStageIndex + stageOffset, transform, playerPos)));
     }
 
     /// <summary>
@@ -145,7 +127,7 @@ public class GoldBlock : MonoBehaviour, IInteractable, IGridUpdatable
     /// </summary>
     /// <param name="isLoadSuccessful"></param>
     /// <param name="playerPos"></param>
-    protected void LoadResult(bool isLoadSuccessful, Transform playerPos)
+    protected override void LoadResult(bool isLoadSuccessful, Transform playerPos)
     {
         if (!isLoadSuccessful)
         {

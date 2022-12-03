@@ -14,7 +14,7 @@ public class Health : MonoBehaviour, IDamagable, IGridUpdatable
     /// <summary>
     /// UI loading bar
     /// </summary>
-    [SerializeField] protected Stored_LoadingBar healthBar;
+    [SerializeField] protected Stored_LB healthBar;
 
     /// <summary>
     ///  Damage type that affects this object
